@@ -2,252 +2,146 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SafePaws Clinic V2.7</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafePaws Login</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:'Segoe UI',Arial;background:#0f172a;color:#e5e7eb}
-#splash{position:fixed;inset:0;background:#0f172a;display:flex;align-items:center;justify-content:center;z-index:9999;animation:fadeCar.5s ease 1.2s forwards}
-#splash div{font-size:100px;animation:drive 1.2s ease-out forwards}
-@keyframes drive{0%{transform:translateX(200px);opacity:0}80%{opacity:1}100%{transform:translateX(0);opacity:1}}
-@keyframes fadeCar{0%{opacity:1}100%{opacity:0;visibility:hidden}}
-#loginScreen{display:flex;align-items:center;justify-content:center;height:100vh;background:linear-gradient(135deg,#0f172a,#1e293b)}
-.login-card{background:#1e293b;padding:28px;border-radius:16px;width:90%;max-width:380px;border:1px solid #334155}
-.login-card h1{text-align:center;margin:0 0 16px}
-.login-card input{width:100%;padding:14px;margin:8px 0;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#e5e7eb}
-.login-card button{width:100%;padding:14px;margin-top:10px;border:0;border-radius:10px;background:#38bdf8;color:#0f172a;font-weight:bold;cursor:pointer}
-#appScreen{display:none;max-height:100vh;overflow-y:auto;padding-bottom:80px}
-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#1e293b;border-bottom:1px solid #334155;position:sticky;top:0;z-index:5}
-.logout{background:#dc2626;border:0;color:#fff;padding:8px 12px;border-radius:8px;font-weight:bold}
-.screen{padding:16px}
-.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px}
-.card input, .card textarea{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e5e7eb}
-.btn{width:100%;padding:14px;border:0;border-radius:12px;background:#16a34a;color:#fff;font-weight:bold;font-size:16px;cursor:pointer;margin-top:8px}
-.btn.blue{background:#38bdf8}
-nav{position:fixed;bottom:0;left:0;right:0;background:#1e293b;border-top:1px solid #334155;display:flex;z-index:10}
-nav button{flex:1;padding:12px;background:0;border:0;color:#94a3b8;font-size:12px;cursor:pointer}
-nav button.active{color:#38bdf8;background:#0f172a}
-.tab{display:none}.tab.active{display:block}
-.row{display:flex;justify-content:space-between;margin:8px 0}
-.badge{background:#38bdf8;color:#fff;padding:2px 8px;border-radius:12px;font-size:12px}
-.booking-item{border:1px solid #334155;border-radius:12px;padding:12px;margin-bottom:10px;background:#0f172a}
-.info{background:#0f172a;border:1px dashed #334155;padding:10px;border-radius:8px;margin-bottom:10px;font-size:13px;color:#94a3b8}
-.map{width:100%;height:200px;border-radius:8px;margin-top:8px;z-index:1}
-.rider-status{color:#38bdf8;font-weight:bold}
-.section-title{margin:12px 0 6px;font-size:14px;color:#38bdf8;font-weight:bold}
-.receipt{background:#0f172a;border:1px solid #334155;padding:10px;border-radius:8px;margin-top:8px}
-.leaflet-container{background:#1e293b}
+    * { box-sizing: border-box; font-family: 'Segoe UI', Arial; }
+  body { background: linear-gradient(135deg, #009688, #004d40); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+
+  /* #ANIMATION SA OPENING */
+  #splash {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(135deg, #009688, #004d40);
+    display: flex; justify-content: center; align-items: center; flex-direction: column;
+    z-index: 9999; animation: fadeOut 1s ease 2s forwards;
+  }
+  #splash img { width: 120px; animation: bounce 1s ease infinite; }
+  #splash h1 { color: white; margin-top: 10px; font-size: 24px; }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+  @keyframes fadeOut {
+    to { opacity: 0; visibility: hidden; }
+  }
+
+  .container { 
+    background: #1e1e2f; padding: 20px; border-radius: 20px; width: 95%; max-width: 500px; 
+    color: white; opacity: 0; animation: fadeIn 1s ease 2.2s forwards; /* #PAPASOK PAGKATAPOS NG SPLASH */
+  }
+  @keyframes fadeIn {
+    to { opacity: 1; }
+  }
+
+  input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; background: #2c2c3f; color: white; }
+  input::placeholder { color: #888; }
+  button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+  .btn-login { background: #4dd0e1; color: #000; }
+  .btn-signup { background: transparent; border: 1px solid #4dd0e1; color: #4dd0e1; }
+  #mapPicker { height: 250px; border-radius: 10px; margin: 10px 0; display: none; }
 </style>
 </head>
 <body>
 
-<div id="splash"><div>🏥</div></div>
-
-<div id="loginScreen">
-<div class="login-card">
-<h1>🏥 SafePaws Clinic</h1>
-<input id="email" type="email" placeholder="Clinic Email">
-<input id="pass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-</div>
+<!-- #ETO YUNG SPLASH SCREEN SA OPENING -->
+<div id="splash">
+  <img src="https://cdn-icons-png.flaticon.com/512/616/616408.png" alt="paw">
+  <h1>SafePaws</h1>
+  <p style="color:#b2dfdb;">Clinic & Grooming</p>
 </div>
 
-<div id="appScreen">
-<header>
-<h3 id="headerTitle">📅 Bookings</h3>
-<button class="logout" onclick="logout()">Logout</button>
-</header>
-<main>
-<div id="bookingsTab" class="screen tab active">
-<div class="info">Live tracking of Rider going to you.</div>
-<div id="bookingsList"></div>
-</div>
-<div id="historyTab" class="screen tab">
-<div id="historyList"></div>
-</div>
-<div id="profileTab" class="screen tab">
-<div class="card">
-<h3>🏥 Clinic Profile</h3>
-<input id="cName" placeholder="Clinic Name">
-<input id="cAddress" placeholder="Address">
-<input id="cPhone" placeholder="Phone">
-<button class="btn" onclick="saveProfile()">Save Profile</button>
-</div>
-</div>
-</main>
-<nav>
-<button class="active" onclick="switchTab('bookingsTab',this)">📅<br>Bookings</button>
-<button onclick="switchTab('historyTab',this)">📜<br>History</button>
-<button onclick="switchTab('profileTab',this)">🏥<br>Profile</button>
-</nav>
+<div class="container">
+  <h2>SafePaws Login</h2>
+
+  <div id="signupFields" style="display:none;">
+    <input type="text" id="clinicName" placeholder="Clinic Name" required>
+    <label style="font-size:14px;">Click map to set Clinic Location:</label>
+    <div id="mapPicker"></div>
+    <input type="text" id="clinicAddress" placeholder="ex. Bauan, Batangas" readonly>
+    <input type="hidden" id="clinicLat">
+    <input type="hidden" id="clinicLng">
+    <input type="tel" id="clinicContact" placeholder="ex. 09123456789">
+  </div>
+
+  <input type="email" id="email" placeholder="ex. clinic@gmail.com" required>
+  <input type="password" id="password" placeholder="Password" required>
+  
+  <button class="btn-login" id="authBtn" onclick="login()">Login</button>
+  <button class="btn-signup" id="switchBtn" onclick="toggleAuth()">Don't have an account? Sign Up</button>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, onSnapshot, collection, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+<script>
 const firebaseConfig = {
-apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
-authDomain: "safepaws-batangas.firebaseapp.com",
-databaseURL: "https://safepaws-batangas-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "safepaws-batangas",
-storageBucket: "safepaws-batangas.firebasestorage.app",
-messagingSenderId: "629904615191",
-appId: "1:629904615191:web:45f7148d65ba61a867f952"
+  apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
+  authDomain: "safepaws-batangas.firebaseapp.com",
+  databaseURL: "https://safepaws-batangas-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "safepaws-batangas",
+  storageBucket: "safepaws-batangas.firebasestorage.app",
+  messagingSenderId: "629904615191",
+  appId: "1:629904615191:web:45f7148d65ba61a867f952"
 };
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-let uid;
-const maps = {};
+let isLogin = true;
+let map, clinicMarker;
 
-onAuthStateChanged(auth, async user=>{
-if(user){
-uid=user.uid;
-setTimeout(()=>{document.getElementById('splash').style.display='none';},1700);
-document.getElementById('loginScreen').style.display='none';
-document.getElementById('appScreen').style.display='block';
-loadProfile();
-listenBookings();
-listenHistory();
-}else{
-setTimeout(()=>{document.getElementById('splash').style.display='none';},1700);
-document.getElementById('loginScreen').style.display='flex';
-document.getElementById('appScreen').style.display='none';
-}
-});
-
-async function loadProfile(){
-const ref = doc(db,'clinics',uid);
-const snap = await getDoc(ref);
-if(snap.exists()){
-const data = snap.data();
-document.getElementById('cName').value = data.name || '';
-document.getElementById('cAddress').value = data.address || '';
-document.getElementById('cPhone').value = data.phone || '';
-}
+function toggleAuth() {
+  isLogin = !isLogin;
+  let signup = document.getElementById('signupFields');
+  signup.style.display = isLogin ? 'none' : 'block';
+  document.getElementById('authBtn').innerText = isLogin ? 'Login' : 'Sign Up';
+  document.getElementById('switchBtn').innerText = isLogin ? "Don't have an account? Sign Up" : "Already have an account? Login";
+  if(!isLogin && !map) initMap();
 }
 
-async function saveProfile(){
-const nameVal = document.getElementById('cName').value;
-const addressVal = document.getElementById('cAddress').value;
-const phoneVal = document.getElementById('cPhone').value;
-await updateDoc(doc(db,'clinics',uid),{name:nameVal,address:addressVal,phone:phoneVal});
-alert('Profile Updated!');
-}
-window.saveProfile=saveProfile;
-
-function initMap(id, lat, lng){
-setTimeout(()=>{
-const map = L.map(`map-${id}`).setView([lat, lng], 14);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-L.marker([lat, lng]).addTo(map).bindPopup('Customer Location');
-maps[id] = map;
-},100);
+function initMap() {
+  map = L.map('mapPicker').setView([13.7561, 121.0583], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+  map.on('click', function(e) {
+    let lat = e.latlng.lat; let lng = e.latlng.lng;
+    document.getElementById('clinicLat').value = lat;
+    document.getElementById('clinicLng').value = lng;
+    document.getElementById('clinicAddress').value = `Pin: ${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+    if(clinicMarker) map.removeLayer(clinicMarker);
+    clinicMarker = L.marker([lat, lng]).addTo(map).bindPopup("Clinic Location").openPopup();
+  });
 }
 
-function listenBookings(){
-const q = query(collection(db,'bookings'), where('clinicId','==',uid), where('status','==','accepted'), orderBy('createdAt','desc'));
-onSnapshot(q, snap=>{
-const bookings = snap.docs.map(d=>({id:d.id,...d.data()}));
-document.getElementById('bookingsList').innerHTML = bookings.length === 0 ? '<div class="card"><p>Waiting for Rider to accept...</p></div>' : bookings.map(b=>`
-<div class="booking-item">
-<div class="section-title">CUSTOMER INFO</div>
-<div class="row"><b>Customer:</b> ${b.customerName || 'Guest'}</div>
-<div class="row"><b>Phone:</b> ${b.customerPhone || 'N/A'}</div>
-<div class="row"><b>Address:</b> ${b.customerAddress || 'N/A'}</div>
-
-<div class="section-title">PET DETAILS</div>
-<div class="row"><b>Pet Name:</b> ${b.petName}</div>
-<div class="row"><b>Breed:</b> ${b.petBreed}</div>
-<div class="row"><b>Age:</b> ${b.petAge || 'N/A'}</div>
-<div class="row"><b>Weight:</b> ${b.petWeight || 'N/A'}</div>
-<div class="row"><b>Notes:</b> ${b.petNotes || 'None'}</div>
-
-<div class="section-title">BOOKING INFO</div>
-<div class="row"><b>Service:</b> ${b.service}</div>
-<div class="row"><b>Date:</b> ${b.date} <span class="badge">${b.time}</span></div>
-<div class="row"><b>Rider:</b> <span class="rider-status">${b.riderName || 'Assigned'}</span></div>
-<div class="row"><b>Status:</b> <span class="rider-status">${b.riderStatus || 'On the way'}</span></div>
-
-<div id="map-${b.id}" class="map"></div>
-
-<div class="section-title">RECEIPT / BILL</div>
-<div class="card">
-<input id="serviceFee-${b.id}" type="number" placeholder="Service Fee ₱">
-<input id="medicineFee-${b.id}" type="number" placeholder="Medicine ₱">
-<textarea id="notes-${b.id}" placeholder="Clinic Notes / Diagnosis"></textarea>
-<button class="btn blue" onclick="sendReceipt('${b.id}')">Send Receipt to Customer</button>
-</div>
-
-<button class="btn" onclick="completeBooking('${b.id}')">Mark as Completed</button>
-</div>
-`).join('');
-
-bookings.forEach(b=>{
-if(b.customerLat && b.customerLng){
-initMap(b.id, b.customerLat, b.customerLng);
+function login() {
+  let email = document.getElementById('email').value;
+  let password = document.getElementById('password').value;
+  if(isLogin) {
+    auth.signInWithEmailAndPassword(email, password)
+    .then(() => window.location.href = "safepaws_clinic.html")
+    .catch((err) => alert("Login Error: " + err.message));
+  } else {
+    let clinicName = document.getElementById('clinicName').value;
+    let clinicAddress = document.getElementById('clinicAddress').value;
+    let clinicLat = document.getElementById('clinicLat').value;
+    let clinicLng = document.getElementById('clinicLng').value;
+    if(!clinicName || !clinicAddress) return alert("Please fill Clinic Name and set location");
+    auth.createUserWithEmailAndPassword(email, password)
+    .then((cred) => {
+      db.collection('clinics').doc(cred.user.uid).set({
+        clinicName, clinicAddress, 
+        location: {lat: parseFloat(clinicLat), lng: parseFloat(clinicLng)},
+        email, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert("Clinic Account Created!");
+        window.location.href = "safepaws_clinic.html";
+      });
+    }).catch((err) => alert("Signup Error: " + err.message));
+  }
 }
-});
-}
-
-async function sendReceipt(id){
-const serviceFee = document.getElementById(`serviceFee-${id}`).value;
-const medicineFee = document.getElementById(`medicineFee-${id}`).value;
-const notes = document.getElementById(`notes-${id}`).value;
-const total = Number(serviceFee) + Number(medicineFee);
-
-await updateDoc(doc(db,'bookings',id),{
-receipt: {serviceFee, medicineFee, total, notes},
-status: 'receipt_sent'
-});
-alert(`Receipt Sent! Total: ₱${total}`);
-}
-window.sendReceipt=sendReceipt;
-
-async function completeBooking(id){
-await updateDoc(doc(db,'bookings',id),{status:'completed'});
-alert('Booking Completed!');
-}
-window.completeBooking=completeBooking;
-
-function listenHistory(){
-const q = query(collection(db,'bookings'), where('clinicId','==',uid), where('status','==','completed'), orderBy('createdAt','desc'));
-onSnapshot(q, snap=>{
-const bookings = snap.docs.map(d=>({id:d.id,...d.data()}));
-document.getElementById('historyList').innerHTML = bookings.length === 0 ? '<div class="card"><p>No history yet</p></div>' : bookings.map(b=>`
-<div class="booking-item">
-<div class="row"><b>Customer:</b> ${b.customerName}</div>
-<div class="row"><b>Pet:</b> ${b.petName} - ${b.petBreed}</div>
-<div class="row"><b>Service:</b> ${b.service}</div>
-<div class="row"><b>Date:</b> ${b.date} ${b.time}</div>
-${b.receipt ? `<div class="receipt"><b>Total Bill:</b> ₱${b.receipt.total}<br><b>Notes:</b> ${b.receipt.notes}</div>` : ''}
-</div>
-`).join('');
-});
-}
-
-async function login(){
-try{
-const emailVal = document.getElementById('email').value;
-const passVal = document.getElementById('pass').value;
-await signInWithEmailAndPassword(auth,emailVal,passVal);
-} catch(e){alert(e.message);}
-}
-window.login=login;
-window.logout=()=>signOut(auth);
-
-function switchTab(id,btn){
-document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
-document.getElementById(id).classList.add('active');
-btn.classList.add('active');
-document.getElementById('headerTitle').textContent=btn.innerText.split('\n')[0];
-}
-window.switchTab=switchTab;
 </script>
 </body>
 </html>
