@@ -7,40 +7,64 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #0a0f1a; color: white; font-family: 'Segoe UI', sans-serif; }
-    .card { background: #1e293b; border-radius: 16px; padding: 24px; }
+    .card { background: #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    @keyframes slideInLeft { from { opacity: 0; transform: translateX(-100%); } to { opacity: 1; transform: translateX(0); } }
+    .animate-slide-left { animation: slideInLeft 0.5s ease-out; }
+    .btn-press:active { transform: scale(0.97); }
+    .hidden { display: none!important; }
     #map { height: 200px; background: #0a0f1a; border: 2px dashed #22d3ee; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     #map.set { background: #065f46; border: 2px solid #10B981; }
-    .hidden { display: none!important; }
   </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body>
 
-  <div class="card w-full max-w-md">
-    <h2 id="formTitle" class="text-2xl font-bold text-[#22d3ee] mb-4 text-center">🏥 Clinic Sign Up</h2>
-    
-    <!-- INPUTS -->
-    <input id="clinicName" type="text" placeholder="Clinic Name" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
-    
-    <p class="text-sm text-gray-400 mb-1">Click map to set Clinic Location:</p>
-    <div id="map" class="mb-2">Click here to set location</div>
+  <!-- 1. AUTH MODAL -->
+  <div id="authModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-30 p-4">
+    <div class="card w-full max-w-sm">
+      <h2 id="formTitle" class="text-2xl font-bold text-[#22d3ee] mb-4 text-center">🏥 Clinic Sign Up</h2>
+      
+      <input id="clinicName" type="text" placeholder="Clinic Name" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
+      
+      <p class="text-sm text-gray-400 mb-1">Click map to set Clinic Location:</p>
+      <div id="map" class="mb-2">Click here to set location</div>
 
-    <input id="phone" type="tel" placeholder="Phone Number" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
-    <input id="email" type="email" placeholder="Email" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
-    <input id="password" type="password" placeholder="Password" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-4">
+      <input id="phone" type="tel" placeholder="Phone" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
+      <input id="email" type="email" placeholder="Email" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
+      <input id="password" type="password" placeholder="Password" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-4">
 
-    <!-- BUTTONS -->
-    <button id="signupBtn" class="w-full bg-[#22d3ee] text-black font-bold p-3 rounded-lg mb-2">Sign Up</button>
-    <button id="loginBtn" class="w-full bg-gray-600 text-white font-bold p-3 rounded-lg mb-2 hidden">Login</button>
-    
-    <p id="toggleAuth" class="text-center text-sm text-gray-400 cursor-pointer">Already have an account? Login</p>
-    <p id="authError" class="text-red-500 text-sm mt-2 text-center"></p>
-    <p id="approvalText" class="text-yellow-400 text-sm mt-2 text-center hidden">Waiting for Admin approval...</p>
+      <button id="signupBtn" class="w-full bg-[#22d3ee] text-black font-bold p-3 rounded-lg mb-2 btn-press">Sign Up</button>
+      <button id="loginBtn" class="w-full bg-gray-600 text-white font-bold p-3 rounded-lg mb-2 btn-press hidden">Login</button>
+      
+      <p id="toggleAuth" class="text-center text-sm text-gray-400 cursor-pointer">Already have an account? Login</p>
+      <p id="authError" class="text-red-500 text-sm mt-2 text-center"></p>
+      <p id="approvalText" class="text-yellow-400 text-sm mt-2 text-center hidden">Status: <span id="statusText">pending</span>. Wait for Admin approval.</p>
+    </div>
+  </div>
+
+  <!-- 2. MAIN APP -->
+  <div id="mainApp" class="hidden">
+    <div class="bg-[#1e293b] text-white p-4 flex justify-between items-center sticky top-0">
+      <div>
+        <h1 class="text-xl font-bold">🏥 SafePaws Clinic</h1>
+        <p id="displayClinicName" class="text-sm text-gray-400"></p>
+      </div>
+      <button id="logoutBtn" class="bg-red-500 text-white px-4 py-1 rounded-lg font-bold text-sm btn-press">Logout</button>
+    </div>
+
+    <div class="p-4">
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="card text-center"><p class="text-gray-400 text-sm">Incoming</p><p id="incomingCount" class="text-3xl font-bold text-[#22d3ee]">0</p></div>
+        <div class="card text-center"><p class="text-gray-400 text-sm">Completed</p><p id="completedCount" class="text-3xl font-bold text-green-500">0</p></div>
+      </div>
+      <h2 class="text-lg font-bold text-[#22d3ee] mb-3">Incoming Patients</h2>
+      <div id="bookingList"></div>
+    </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, collection, query, where, onSnapshot, updateDoc, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     
     const firebaseConfig = { 
       apiKey: "AIzaSyBVaqhNCrgDlWGEVjXygszJUdQR_bpG7os",
@@ -49,26 +73,25 @@
       projectId: "safepaws-batangas",
       storageBucket: "safepaws-batangas.firebasestorage.app",
       messagingSenderId: "629904615191",
-      appId: "1:629904615191:web:45f7148d65ba61a867f952" 
+      appId: "1:629904615191:web:45f7148d65ba61a867f952"
     };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     let isLogin = false;
+    let myClinicName = "";
     let clinicLat = null, clinicLng = null;
 
-    // 1. MAP CLICK - PARA MAWALA YUNG ERROR
-    document.getElementById('map').onclick = (e) => {
-      // Sample location muna. Bauan Batangas coords
-      clinicLat = 13.7910; 
-      clinicLng = 121.0045; 
+    // MAP CLICK
+    document.getElementById('map').onclick = () => {
+      clinicLat = 13.7910; clinicLng = 121.0045; 
       const map = document.getElementById('map');
       map.classList.add('set');
       map.innerText = "📍 Location Set: Bauan, Batangas";
     }
 
-    // 2. TOGGLE LOGIN/SIGNUP
+    // TOGGLE
     document.getElementById('toggleAuth').onclick = () => {
       isLogin = !isLogin;
       document.getElementById('formTitle').innerText = isLogin ? "🏥 Clinic Login" : "🏥 Clinic Sign Up";
@@ -80,53 +103,83 @@
       document.getElementById('toggleAuth').innerText = isLogin ? "No account? Sign Up" : "Already have an account? Login";
     }
 
-    // 3. SIGNUP
-    document.getElementById('signupBtn').onclick = async () => {
-      const name = clinicName.value.trim();
-      const emailVal = email.value.trim();
-      const pass = password.value;
-      const phoneVal = phone.value.trim();
-
-      if(!name || !clinicLat) {
-        alert("Please fill Clinic Name and set location");
-        return;
-      }
-
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, emailVal, pass);
-        // Save sa Firestore with PENDING status
-        await setDoc(doc(db, "clinics", cred.user.uid), {
-          name: name,
-          email: emailVal,
-          phone: phoneVal,
-          lat: clinicLat,
-          lng: clinicLng,
-          status: "pending", // I-aapprove mo to sa Firebase
-          createdAt: serverTimestamp()
-        });
-        document.getElementById('approvalText').classList.remove('hidden');
-        alert("Signup successful! Wait for Admin approval in Firebase");
-      } catch(err) {
-        authError.textContent = err.message;
-      }
-    }
-
-    // 4. LOGIN
-    document.getElementById('loginBtn').onclick = async () => {
-      try {
-        const cred = await signInWithEmailAndPassword(auth, email.value, password.value);
-        const clinicDoc = await getDoc(doc(db, "clinics", cred.user.uid));
-        if(clinicDoc.exists() && clinicDoc.data().status === "approved") {
-          alert("Login Success! Redirecting...");
-          // window.location.href = "clinic-dashboard.html"
-        } else {
-          document.getElementById('approvalText').classList.remove('hidden');
-          alert("Your clinic is not approved yet");
+    // AUTH
+    onAuthStateChanged(auth, async user => {
+      if(user) {
+        const clinicDoc = await getDoc(doc(db, "clinics", user.uid));
+        if(clinicDoc.exists()) {
+          const data = clinicDoc.data();
+          myClinicName = data.name;
+          document.getElementById('statusText').innerText = data.status;
+          
+          if(data.status === "approved") {
+            document.getElementById('displayClinicName').innerText = myClinicName;
+            document.getElementById('authModal').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            listenToBookings(myClinicName);
+          } else {
+            document.getElementById('approvalText').classList.remove('hidden');
+          }
         }
-      } catch(err) {
-        authError.textContent = err.message;
       }
+    });
+
+    // SIGNUP
+    document.getElementById('signupBtn').onclick = async () => {
+      if(!clinicName.value.trim() || !clinicLat) return alert("Please fill Clinic Name and set location");
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
+        await setDoc(doc(db, "clinics", cred.user.uid), {
+          name: clinicName.value.trim(), email: email.value, phone: phone.value,
+          lat: clinicLat, lng: clinicLng, status: "pending", createdAt: serverTimestamp()
+        });
+        alert("Signup successful! Wait for Admin approval");
+      } catch(err) { authError.textContent = err.message; }
     }
+
+    // LOGIN
+    document.getElementById('loginBtn').onclick = () => {
+      signInWithEmailAndPassword(auth, email.value, password.value)
+      .catch(err => authError.textContent = err.message);
+    }
+
+    document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+    // LISTEN BOOKINGS WITH ANIMATION
+    function listenToBookings(clinicName) {
+      const q = query(collection(db, "bookings"), where("clinicName", "==", clinicName));
+      onSnapshot(q, snap=>{
+        const list = document.getElementById('bookingList');
+        list.innerHTML = "";
+        let incoming = 0, completed = 0;
+        snap.forEach(d=>{
+          const b = d.data();
+          if(b.status === "Rider Assigned" || b.status === "At Clinic") incoming++;
+          if(b.status === "Completed") completed++;
+          
+          if(b.status === "Rider Assigned" || b.status === "At Clinic") {
+            list.innerHTML += `
+            <div class="card mb-3 animate-slide-left">
+              <div class="flex justify-between"><p class="font-bold text-lg">${b.type} ${b.type==='Emergency'?'🚨':''}</p><span class="bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-bold">${b.status}</span></div>
+              <p class="mt-2"><b>Pet:</b> ${b.petName}</p><p><b>Rider:</b> ${b.riderName || 'On the way...'}</p><p><b>Fare:</b> ${b.fare}</p>
+              <div class="flex gap-2 mt-3">
+                ${b.status === "Rider Assigned" ? 
+                  `<button onclick="markArrived('${d.id}')" class="bg-[#22d3ee] text-black font-bold px-4 py-2 rounded-lg w-full btn-press">MARK ARRIVED</button>` 
+                  : 
+                  `<button onclick="markCompleted('${d.id}')" class="bg-green-500 text-white font-bold px-4 py-2 rounded-lg w-full btn-press">MARK COMPLETED</button>`
+                }
+              </div>
+            </div>`
+          }
+        });
+        document.getElementById('incomingCount').innerText = incoming;
+        document.getElementById('completedCount').innerText = completed;
+        if(incoming === 0) list.innerHTML = `<div class="card text-center text-gray-400">No incoming patients yet</div>`;
+      });
+    }
+
+    window.markArrived = async (id) => await updateDoc(doc(db,"bookings",id),{ status: "At Clinic" });
+    window.markCompleted = async (id) => await updateDoc(doc(db,"bookings",id),{ status: "Completed" });
   </script>
 </body>
 </html>
