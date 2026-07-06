@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SafePaws Clinic</title>
+  <title>SafePaws Vet & Groom</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: #0a0f1a; color: white; font-family: 'Segoe UI', sans-serif; }
@@ -17,24 +17,18 @@
   </style>
 </head>
 <body>
-
   <!-- 1. AUTH MODAL -->
   <div id="authModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-30 p-4">
     <div class="card w-full max-w-sm">
       <h2 id="formTitle" class="text-2xl font-bold text-[#22d3ee] mb-4 text-center">🏥 Clinic Sign Up</h2>
-      
       <input id="clinicName" type="text" placeholder="Clinic Name" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
-      
       <p class="text-sm text-gray-400 mb-1">Click map to set Clinic Location:</p>
       <div id="map" class="mb-2">Click here to set location</div>
-
       <input id="phone" type="tel" placeholder="Phone" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
       <input id="email" type="email" placeholder="Email" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
       <input id="password" type="password" placeholder="Password" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-4">
-
       <button id="signupBtn" class="w-full bg-[#22d3ee] text-black font-bold p-3 rounded-lg mb-2 btn-press">Sign Up</button>
       <button id="loginBtn" class="w-full bg-gray-600 text-white font-bold p-3 rounded-lg mb-2 btn-press hidden">Login</button>
-      
       <p id="toggleAuth" class="text-center text-sm text-gray-400 cursor-pointer">Already have an account? Login</p>
       <p id="authError" class="text-red-500 text-sm mt-2 text-center"></p>
       <p id="approvalText" class="text-yellow-400 text-sm mt-2 text-center hidden">Status: <span id="statusText">pending</span>. Wait for Admin approval.</p>
@@ -50,7 +44,6 @@
       </div>
       <button id="logoutBtn" class="bg-red-500 text-white px-4 py-1 rounded-lg font-bold text-sm btn-press">Logout</button>
     </div>
-
     <div class="p-4">
       <div class="grid grid-cols-2 gap-3 mb-4">
         <div class="card text-center"><p class="text-gray-400 text-sm">Incoming</p><p id="incomingCount" class="text-3xl font-bold text-[#22d3ee]">0</p></div>
@@ -111,7 +104,6 @@
           const data = clinicDoc.data();
           myClinicName = data.name;
           document.getElementById('statusText').innerText = data.status;
-          
           if(data.status === "approved") {
             document.getElementById('displayClinicName').innerText = myClinicName;
             document.getElementById('authModal').classList.add('hidden');
@@ -124,14 +116,19 @@
       }
     });
 
-    // SIGNUP
+    // SIGNUP - ITO YUNG PAPASOK SA ADMIN APPROVAL
     document.getElementById('signupBtn').onclick = async () => {
       if(!clinicName.value.trim() || !clinicLat) return alert("Please fill Clinic Name and set location");
       try {
         const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
         await setDoc(doc(db, "clinics", cred.user.uid), {
-          name: clinicName.value.trim(), email: email.value, phone: phone.value,
-          lat: clinicLat, lng: clinicLng, status: "pending", createdAt: serverTimestamp()
+          name: clinicName.value.trim(), // ITO GAGAMITIN SA FILTER NG BOOKINGS
+          email: email.value, 
+          phone: phone.value,
+          lat: clinicLat, 
+          lng: clinicLng, 
+          status: "pending", // ITO YUNG HAHANAPIN NI ADMIN
+          createdAt: serverTimestamp()
         });
         alert("Signup successful! Wait for Admin approval");
       } catch(err) { authError.textContent = err.message; }
@@ -142,7 +139,6 @@
       signInWithEmailAndPassword(auth, email.value, password.value)
       .catch(err => authError.textContent = err.message);
     }
-
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
     // LISTEN BOOKINGS WITH ANIMATION
@@ -156,7 +152,6 @@
           const b = d.data();
           if(b.status === "Rider Assigned" || b.status === "At Clinic") incoming++;
           if(b.status === "Completed") completed++;
-          
           if(b.status === "Rider Assigned" || b.status === "At Clinic") {
             list.innerHTML += `
             <div class="card mb-3 animate-slide-left">
@@ -177,7 +172,6 @@
         if(incoming === 0) list.innerHTML = `<div class="card text-center text-gray-400">No incoming patients yet</div>`;
       });
     }
-
     window.markArrived = async (id) => await updateDoc(doc(db,"bookings",id),{ status: "At Clinic" });
     window.markCompleted = async (id) => await updateDoc(doc(db,"bookings",id),{ status: "Completed" });
   </script>
