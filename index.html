@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SafePaws Clinic</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     body { background: #0a0f1a; color: white; font-family: 'Segoe UI', sans-serif; }
     .card { background: #1e293b; border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
@@ -12,18 +13,20 @@
     .animate-slide-left { animation: slideInLeft 0.5s ease-out; }
     .btn-press:active { transform: scale(0.97); }
     .hidden { display: none!important; }
-    #map { height: 200px; background: #0a0f1a; border: 2px dashed #22d3ee; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    #map.set { background: #065f46; border: 2px solid #10B981; }
+    #map { height: 220px; border-radius: 12px; z-index: 1; }
   </style>
 </head>
 <body>
   <!-- 1. AUTH MODAL -->
-  <div id="authModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-30 p-4">
-    <div class="card w-full max-w-sm">
+  <div id="authModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-30 p-4 overflow-y-auto">
+    <div class="card w-full max-w-sm my-4">
       <h2 id="formTitle" class="text-2xl font-bold text-[#22d3ee] mb-4 text-center">🏥 Clinic Sign Up</h2>
       <input id="clinicName" type="text" placeholder="Clinic Name" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
-      <p class="text-sm text-gray-400 mb-1">Click map to set Clinic Location:</p>
-      <div id="map" class="mb-2">Click here to set location</div>
+      <input id="license" type="text" placeholder="Clinic License #" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
+      <p class="text-sm text-gray-400 mb-1">Click button to get Current Location:</p>
+      <div id="map" class="mb-2"></div>
+      <button id="getLocBtn" class="w-full bg-[#22d3ee] text-black font-bold p-2 rounded-lg mb-2 btn-press">📍 Get My Current Location</button>
+      <p id="locStatus" class="text-xs text-center text-gray-400 mb-2">Location not set</p>
       <input id="phone" type="tel" placeholder="Phone" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
       <input id="email" type="email" placeholder="Email" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-2">
       <input id="password" type="password" placeholder="Password" class="w-full p-3 bg-[#0a0f1a] rounded-lg mb-4">
@@ -54,6 +57,7 @@
     </div>
   </div>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -75,33 +79,54 @@
     let isLogin = false;
     let myClinicName = "";
     let clinicLat = null, clinicLng = null;
+    let map, marker;
 
-    // MAP CLICK
-    document.getElementById('map').onclick = () => {
-      clinicLat = 13.7910; clinicLng = 121.0045; 
-      const map = document.getElementById('map');
-      map.classList.add('set');
-      map.innerText = "📍 Location Set: Bauan, Batangas";
+    function initMap(lat=14.5995, lng=120.9842){
+      map = L.map('map').setView([lat, lng], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+      marker = L.marker([lat, lng]).addTo(map);
+    }
+    initMap();
+
+    document.getElementById('getLocBtn').onclick = () => {
+      document.getElementById('locStatus').innerText = "Getting location...";
+      if(navigator.geolocation){
+        navigator.geolocation.getCurrentPosition((position) => {
+          clinicLat = position.coords.latitude;
+          clinicLng = position.coords.longitude;
+          map.setView([clinicLat, clinicLng], 16);
+          marker.setLatLng([clinicLat, clinicLng]);
+          document.getElementById('locStatus').innerText = `📍 Set: ${clinicLat.toFixed(5)}, ${clinicLng.toFixed(5)}`;
+        }, () => {
+          alert("Hindi ma kuha location. Please allow GPS permission.");
+          document.getElementById('locStatus').innerText = "Location not set";
+        });
+      }
     }
 
-    // TOGGLE
     document.getElementById('toggleAuth').onclick = () => {
       isLogin = !isLogin;
       document.getElementById('formTitle').innerText = isLogin ? "🏥 Clinic Login" : "🏥 Clinic Sign Up";
       document.getElementById('signupBtn').classList.toggle('hidden');
       document.getElementById('loginBtn').classList.toggle('hidden');
       document.getElementById('clinicName').classList.toggle('hidden');
+      document.getElementById('license').classList.toggle('hidden');
       document.getElementById('phone').classList.toggle('hidden');
       document.getElementById('map').classList.toggle('hidden');
+      document.getElementById('getLocBtn').classList.toggle('hidden');
+      document.getElementById('locStatus').classList.toggle('hidden');
       document.getElementById('toggleAuth').innerText = isLogin ? "No account? Sign Up" : "Already have an account? Login";
+      setTimeout(()=>map.invalidateSize(), 100);
     }
 
-    // AUTH
     onAuthStateChanged(auth, async user => {
       if(user) {
-        const clinicDoc = await getDoc(doc(db, "clinics", user.uid));
+        // DITO NAGBAGO: businesses na hindi clinics
+        const clinicDoc = await getDoc(doc(db, "businesses", user.uid));
         if(clinicDoc.exists()) {
           const data = clinicDoc.data();
+          if(data.type !== "vet") return alert("This account is not a Clinic");
+          
           myClinicName = data.name;
           document.getElementById('statusText').innerText = data.status;
           if(data.status === "approved") {
@@ -113,35 +138,38 @@
             document.getElementById('approvalText').classList.remove('hidden');
           }
         }
+      } else {
+        document.getElementById('authModal').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
       }
     });
 
-    // SIGNUP - ITO YUNG PAPASOK SA ADMIN APPROVAL
+    // DITO NAGBAGO: businesses na hindi clinics
     document.getElementById('signupBtn').onclick = async () => {
-      if(!clinicName.value.trim() || !clinicLat) return alert("Please fill Clinic Name and set location");
+      if(!clinicName.value.trim() || !clinicLat) return alert("Please fill Clinic Name and click 'Get My Current Location'");
       try {
         const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
-        await setDoc(doc(db, "clinics", cred.user.uid), {
-          name: clinicName.value.trim(), // ITO GAGAMITIN SA FILTER NG BOOKINGS
+        await setDoc(doc(db, "businesses", cred.user.uid), { // FIXED NA DITO
+          name: clinicName.value.trim(), 
+          type: "vet", // IMPORTANTE TO PARA MABASA NG ADMIN
+          license: license.value.trim(),
           email: email.value, 
           phone: phone.value,
-          lat: clinicLat, 
+          lat: clinicLat,
           lng: clinicLng, 
-          status: "pending", // ITO YUNG HAHANAPIN NI ADMIN
+          status: "pending", 
           createdAt: serverTimestamp()
         });
         alert("Signup successful! Wait for Admin approval");
       } catch(err) { authError.textContent = err.message; }
     }
 
-    // LOGIN
     document.getElementById('loginBtn').onclick = () => {
       signInWithEmailAndPassword(auth, email.value, password.value)
       .catch(err => authError.textContent = err.message);
     }
     document.getElementById('logoutBtn').onclick = () => signOut(auth);
 
-    // LISTEN BOOKINGS WITH ANIMATION
     function listenToBookings(clinicName) {
       const q = query(collection(db, "bookings"), where("clinicName", "==", clinicName));
       onSnapshot(q, snap=>{
